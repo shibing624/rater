@@ -6,7 +6,7 @@ import sys
 
 from setuptools import setup, find_packages
 
-import recommender
+import rater
 
 if sys.version_info < (3,):
     sys.exit('Sorry, Python3 is required.')
@@ -21,14 +21,14 @@ with open('requirements.txt', 'r', encoding='utf-8') as f:
     reqs = f.read()
 
 setup(
-    name='recommender',
-    version=recommender.__version__,
-    description='Recommender',
+    name='rater',
+    version=rater.__version__,
+    description='rater',
     long_description=readme,
     long_description_content_type='text/markdown',
     author='XuMing',
     author_email='xuming624@qq.com',
-    url='https://github.com/shibing624/recommender',
+    url='https://github.com/shibing624/rater',
     license="Apache License 2.0",
     classifiers=[
         'Intended Audience :: Developers',
@@ -44,12 +44,12 @@ setup(
         'Topic :: Text Processing :: Indexing',
         'Topic :: Text Processing :: Linguistic',
     ],
-    keywords='recommender,Recommendation System,recommendation model',
+    keywords='rater,recommender,Recommendation System,recommendation model',
     install_requires=reqs.strip().split('\n'),
     packages=find_packages(exclude=['tests']),
-    package_dir={'recommender': 'recommender'},
+    package_dir={'rater': 'rater'},
     package_data={
-        'recommender': ['*.*', '../LICENSE', '../*.txt', '../README.*'],
+        'rater': ['*.*', '../LICENSE', '../*.txt', '../README.*'],
     },
     test_suite='tests',
 )
