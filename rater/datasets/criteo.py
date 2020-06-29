@@ -2,101 +2,112 @@
 """
 @author:XuMing(xuming624@qq.com)
 @description: load sample file
+
+data format:
+
+label continuous_columns category_columns
+0	1	1	5	0	1382	4	15	2	181	1	2		2	68fd1e64	80e26c9b	fb936136	7b4723c4
+
 """
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
+
+import os
+import sys
 
 import pandas as pd
-from sklearn.metrics import log_loss, roc_auc_score
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import LabelEncoder, MinMaxScaler
+from six.moves import input
 
-from rater.layers.inputs import SparseFeat, DenseFeat, get_feature_names
+from . import download_builtin_dataset, BUILTIN_DATASETS
 
-continuous_columns = ['I' + str(i) for i in range(1, 14)]
-category_columns = ['C' + str(i) for i in range(1, 27)]
 
-def load_data(path, n_samples=-1):
+class Criteo:
+    """`Criteo <http://labs.criteo.com/wp-content/uploads/2015/04/dac_sample.tar.gz>`_ Dataset.
+
+    If the dataset has not already been loaded, it will be downloaded and saved.
+
+    Args:
+        name(:obj:`string`): The name of the built-in dataset to load.
+            Accepted values are 'dac_sample.tar.gz', 'dac.tar.gz'.
+            Default is dac_sample.tar.gz.
+        prompt(:obj:`bool`): Prompt before downloading if dataset is not
+            already on disk.
+            Default is True.
+
+    Returns:
+        A :obj:`Dataset` object.
+
+    Raises:
+        ValueError: If the ``name`` parameter is incorrect.
+
     """
-    Load sample file to DataFrame
-    :param path:
-    :param n_samples:
-    :return: X
-    """
-    data = pd.read_csv(path, delimiter='\t', header=None)
 
-    columns = ['y']
+    def __init__(self, name='dac_sample.tar.gz', prompt=True, shuffle=True, n_samples=-1):
+        self.name = name
+        self.shuffle = shuffle
+        self.n_samples = n_samples
 
-    columns.extend(continuous_columns)
-    columns.extend(category_columns)
-    data.columns = columns
+        try:
+            dataset = BUILTIN_DATASETS[name]
+        except KeyError:
+            raise ValueError('unknown dataset ' + name +
+                             '. Accepted values are ' +
+                             ', '.join(BUILTIN_DATASETS.keys()) + '.')
 
-    if n_samples > 0:
-        data = data.sample(n=n_samples)
-        data.reset_index(drop=True, inplace=True)
+        # if dataset does not exist, offer to download it
+        if not os.path.isfile(dataset.path):
+            answered = not prompt
+            while not answered:
+                print('Dataset ' + name + ' could not be found. Do you want '
+                                          'to download it? [Y/n] ', end='')
+                choice = input().lower()
 
-    # fill NaN
-    data[continuous_columns] = data[continuous_columns].fillna(0)
-    data[category_columns] = data[category_columns].fillna('0')
-    return data
+                if choice in ['yes', 'y', '', 'ok', 'true']:
+                    answered = True
+                elif choice in ['no', 'n', 'false']:
+                    print("Ok then, I'm out!")
+                    sys.exit()
 
+            download_builtin_dataset(name)
 
-def load_criteo_file(path, n_samples=10000):
-    """
-    An example for load criteo dataset
-    :param path: File path of criteo dataset.
-    :param n_samples: Number to sample from the full dataset. n_samples <= 0 means not to sample.
-    :return: X
-    """
-    data = load_data(path, n_samples=n_samples)
-    # 1.Label Encoding for sparse features, and do simple Transformation for dense features
-    for col in category_columns:
-        lbe = LabelEncoder()
-        data[col] = lbe.fit_transform(data[col])
-    mms = MinMaxScaler(feature_range=(0, 1))
-    data[continuous_columns] = mms.fit_transform(data[continuous_columns])
+        self.line_format, self.sep = dataset.reader_params
 
-    # 2.Count unique features for each sparse field, and record dense feature field name
-    total_feature_columns = [SparseFeat(feat, data[feat].nunique()) for feat in category_columns] + \
-                             [DenseFeat(feat, 1, ) for feat in continuous_columns]
+        # dac data format
+        self.continuous_columns = ['I' + str(i) for i in range(1, 14)]
+        self.category_columns = ['C' + str(i) for i in range(1, 27)]
+        self.columns = ['label']
+        self.columns.extend(self.continuous_columns)
+        self.columns.extend(self.category_columns)
 
-    feature_names = get_feature_names(total_feature_columns)
+        self.data_file = dataset.path
+        self.data = self.read_ratings(dataset.path)
 
-    # 3.generate input data for model
-    train, test = train_test_split(data, test_size=0.2)
+    def read_ratings(self, file_name):
+        """Return a list of data read from file_name"""
+        file_path = os.path.expanduser(file_name)
+        data = pd.read_csv(file_path, delimiter=self.sep, header=None)
+        data.columns = self.columns
 
-    train_model_input = {name: train[name] for name in feature_names}
-    test_model_input = {name: test[name] for name in feature_names}
+        # Sample data
+        if self.n_samples > 0:
+            data = data.sample(n=self.n_samples)
+            data.reset_index(drop=True, inplace=True)
+        elif self.shuffle:
+            data = data.sample(frac=1)
+            data.reset_index(drop=True, inplace=True)
 
-    y = data.y
-    return train_model_input, test_model_input, y, train, test
+        # Fill Nan
+        data[self.continuous_columns] = data[self.continuous_columns].fillna(0)
+        data[self.category_columns] = data[self.category_columns].fillna('-1')
 
+        return data
 
-if __name__ == '__main__':
-    # file_path = '../../examples/criteo_sample_1w.txt'
-    # data = load_criteo_file(file_path)
-
-    import xlearn as xl
-
-    # 训练
-    ffm_model = xl.create_ffm()  # 使用FFM模型
-    ffm_model.setTrain("./FFM_train.txt")  # 训练数据
-    ffm_model.setTrain("../../examples/test.txt")  # 训练数据
-    ffm_model.setValidate("../../examples/test.txt")  # 校验测试数据
-
-    # param:
-    #  0. binary classification
-    #  1. learning rate: 0.2
-    #  2. regular lambda: 0.0022
-    #  3. evaluation metric: accuracy
-    param = {'task': 'binary', 'lr': 0.2,
-             'lambda': 0.002, 'metric': 'acc'}
-
-    # 开始训练
-    ffm_model.fit(param, './model.out')
-
-    # 预测
-    ffm_model.setTest("../../examples/test.txt")  # 测试数据
-    ffm_model.setSigmoid()  # 归一化[0,1]之间
-
-    # 开始预测
-
-    ffm_model.predict("./model.out", "./output.txt")
+    def __repr__(self):
+        fmt_str = 'Dataset ' + self.__class__.__name__ + '\n'
+        fmt_str += '    name: {}\n'.format(self.name)
+        fmt_str += '    data size: {}\n'.format(len(self.data))
+        fmt_str += '    shuffle: {}\n'.format(self.shuffle)
+        fmt_str += '    data file: {}\n'.format(self.data_file)
+        fmt_str += '    line format: {}\n'.format(self.line_format)
+        fmt_str += '    data head: {}\n'.format(self.data.head(n=1))
+        return fmt_str

@@ -12,72 +12,108 @@ user	item	rating	timestamp
 1	3408	4	978300275
 1	2355	5	97882429
 """
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
 
-from functools import partial
+import os
+import sys
 
-import numpy as np
-import scipy.sparse as sparse
+import pandas as pd
+from six.moves import input
+
+from . import download_builtin_dataset, BUILTIN_DATASETS
 
 
-def make_ratings(n_users, n_items, min_rating_per_user, max_rating_per_user,
-                 rating_choices, seed=None, shuffle=True):
-    """Randomly generate a (user_id, item_id, rating) array
+class Movielens:
+    """`Movielens <http://files.grouplens.org/datasets/movielens/ml-100k.zip>`_ Dataset.
 
-    Return
-    ------
-        ndarray with shape (n_samples, 3)
+    If the dataset has not already been loaded, it will be downloaded and saved.
+
+    Args:
+        name(:obj:`string`): The name of the built-in dataset to load.
+            Accepted values are 'ml-100k.zip', 'ml-1m.zip', and 'jester_dataset_2.zip'.
+            Default is 'ml-100k.zip'.
+        prompt(:obj:`bool`): Prompt before downloading if dataset is not
+            already on disk.
+            Default is True.
+
+    Returns:
+        A :obj:`Dataset` object.
+
+    Raises:
+        ValueError: If the ``name`` parameter is incorrect.
 
     """
-    if not (isinstance(rating_choices, list) or
-                isinstance(rating_choices, tuple)):
-        raise ValueError("'rating_choices' must be a list or tuple")
-    if min_rating_per_user < 0 or min_rating_per_user >= n_items:
-        raise ValueError("invalid 'min_rating_per_user' invalid")
-    if (min_rating_per_user > max_rating_per_user) or \
-            (max_rating_per_user >= n_items):
-        raise ValueError("invalid 'max_rating_per_user' invalid")
 
-    rs = np.random.RandomState(seed=seed)
-    user_arrs = []
-    for user_id in range(n_users):
-        item_count = rs.randint(min_rating_per_user, max_rating_per_user)
-        item_ids = rs.choice(n_items, item_count, replace=False)
-        ratings = rs.choice(rating_choices, item_count)
-        arr = np.stack(
-            [np.repeat(user_id, item_count), item_ids, ratings], axis=1)
-        user_arrs.append(arr)
+    def __init__(self, name='ml-100k.zip', prompt=True, seed=None, shuffle=True, n_samples=-1):
+        self.name = name
+        self.shuffle = shuffle
+        self.n_samples = n_samples
 
-    ratings = np.array(np.vstack(user_arrs))
-    ratings[:, 2] = ratings[:, 2].astype('float')
-    if shuffle:
-        rs.shuffle(ratings)
-    return ratings
+        try:
+            dataset = BUILTIN_DATASETS[name]
+        except KeyError:
+            raise ValueError('unknown dataset ' + name +
+                             '. Accepted values are ' +
+                             ', '.join(BUILTIN_DATASETS.keys()) + '.')
 
+        # if dataset does not exist, offer to download it
+        if not os.path.isfile(dataset.path):
+            answered = not prompt
+            while not answered:
+                print('Dataset ' + name + ' could not be found. Do you want '
+                                          'to download it? [Y/n] ', end='')
+                choice = input().lower()
 
-def load_movielens_ratings(ratings_file, separator):
-    with open(ratings_file) as f:
-        ratings = []
-        for line in f:
-            line = line.split(separator)[:3]
-            line = [int(l) for l in line]
-            ratings.append(line)
-        ratings = np.array(ratings)
-    return ratings
+                if choice in ['yes', 'y', '', 'ok', 'true']:
+                    answered = True
+                elif choice in ['no', 'n', 'false']:
+                    print("Ok then, I'm out!")
+                    sys.exit()
 
+            download_builtin_dataset(name)
 
-load_movielens_1m_ratings = partial(load_movielens_ratings, separator="::")
-load_movielens_100k_ratings = partial(load_movielens_ratings, separator="\t")
+        self.line_format, self.sep = dataset.reader_params
+        splitted_format = self.line_format.split()
 
+        self.columns = ['user', 'item', 'rating']
+        if 'timestamp' in splitted_format:
+            self.with_timestamp = True
+            self.columns.append('timestamp')
+        else:
+            self.with_timestamp = False
 
-def build_user_item_matrix(n_users, n_items, ratings):
-    """Build user-item matrix
+        # check that all fields are correct
+        if any(field not in self.columns for field in splitted_format):
+            raise ValueError('line_format parameter is incorrect.')
 
-    Return
-    ------
-        sparse matrix with shape (n_users, n_items)
-    """
-    data = ratings[:, 2]
-    row_ind = ratings[:, 0]
-    col_ind = ratings[:, 1]
-    shape = (n_users, n_items)
-    return sparse.csr_matrix((data, (row_ind, col_ind)), shape=shape)
+        self.data_file = dataset.path
+        self.data = self.read_ratings(dataset.path)
+
+    def read_ratings(self, file_name):
+        """Return a list of ratings (user, item, rating, timestamp) read from file_name"""
+        file_path = os.path.expanduser(file_name)
+        data = pd.read_csv(file_path, delimiter=self.sep, header=None)
+        data.columns = self.columns
+
+        # Sample data
+        if self.n_samples > 0:
+            data = data.sample(n=self.n_samples)
+            data.reset_index(drop=True, inplace=True)
+        elif self.shuffle:
+            data = data.sample(frac=1)
+            data.reset_index(drop=True, inplace=True)
+
+        # Add cols
+        data[self.columns] = data[self.columns].fillna(0)
+        return data
+
+    def __repr__(self):
+        fmt_str = 'Dataset ' + self.__class__.__name__ + '\n'
+        fmt_str += '    name: {}\n'.format(self.name)
+        fmt_str += '    data size: {}\n'.format(len(self.data))
+        fmt_str += '    shuffle: {}\n'.format(self.shuffle)
+        fmt_str += '    data file: {}\n'.format(self.data_file)
+        fmt_str += '    line format: {}\n'.format(self.line_format)
+        fmt_str += '    data head: {}\n'.format(self.data.head(n=1))
+        return fmt_str
