@@ -2,3 +2,4 @@ torch
 scikit-learn
 scipy>=0.18.1
 pandas
+lightgbm
