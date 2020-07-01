@@ -3,7 +3,16 @@
 **rater** is a comparative framework for multimodal recommender systems. It was developed to facilitate the designing, comparing, and sharing of recommendation models.
 
 ## Feature
-#### Model List
+
+* easy to use, rebuild and compare
+* SOTA model
+* classical model and deep model
+* model has great influence in the industry
+* model hsa been successfully applied by Google, Alibaba, Baidu and other well-known companies
+* engineering oriented, not just experimental data validation
+
+
+## Model List
 ### Click Through Rate Prediction
 | model | paper |
 |:-----|:------|
@@ -49,10 +58,12 @@
 |EGES: Enhanced Graph Embedding with Side information|Billion-scale Commodity Embedding for E-commerce Recommendation in Alibaba|
 
 
+#### Model Evolution
 
+![model_evolution](docs/deeprec.jpg)
+refer: https://zhuanlan.zhihu.com/p/63186101
 
 ## Data
-
 
 1. ml-1m: http://files.grouplens.org/datasets/movielens/ml-1m.zip
 2. delicious-2k: http://files.grouplens.org/datasets/hetrec2011/hetrec2011-delicious-2k.zip
@@ -128,5 +139,5 @@ You can also post bug reports and feature requests in [GitHub issues](https://gi
 * [Deep Hybrid Models for Recommendation]
 * [maciejkula/spotlight](https://github.com/maciejkula/spotlight)
 * [shenweichen/DeepCTR](https://github.com/shenweichen/DeepCTR)
-* [推荐系统实践]
 * [Magic-Bubble/RecommendSystemPractice](https://github.com/Magic-Bubble/RecommendSystemPractice)
+* [nzc/dnn_ctr](https://github.com/nzc/dnn_ctr)
