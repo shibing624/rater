@@ -19,6 +19,7 @@ import pandas as pd
 from six.moves import input
 
 from . import download_builtin_dataset, BUILTIN_DATASETS
+from ..features.feature_dict import FeatureDict, process_features
 
 
 class Criteo:
@@ -42,7 +43,7 @@ class Criteo:
 
     """
 
-    def __init__(self, name='dac_sample.tar.gz', prompt=True, shuffle=True, n_samples=-1):
+    def __init__(self, name='dac_sample.tar.gz', prompt=True, shuffle=False, n_samples=-1):
         self.name = name
         self.shuffle = shuffle
         self.n_samples = n_samples
@@ -80,9 +81,9 @@ class Criteo:
         self.columns.extend(self.category_columns)
 
         self.data_file = dataset.path
-        self.data = self.read_ratings(dataset.path)
+        self.data = self.read_data(dataset.path)
 
-    def read_ratings(self, file_name):
+    def read_data(self, file_name):
         """Return a list of data read from file_name"""
         file_path = os.path.expanduser(file_name)
         data = pd.read_csv(file_path, delimiter=self.sep, header=None)
@@ -101,6 +102,25 @@ class Criteo:
         data[self.category_columns] = data[self.category_columns].fillna('-1')
 
         return data
+
+    def get_features(self, discretize=False):
+        """
+        Get feature dict
+        :param discretize: bool
+        :return:
+        """
+        # build feature instance
+        features = FeatureDict()
+        for column in self.continuous_columns:
+            features.add_continuous_feat(column, discretize=discretize)
+        for column in self.category_columns:
+            features.add_categorical_feat(column)
+
+        X_idx, X_value, category_index, continuous_value = process_features(features, self.data)
+        y = self.data.label
+
+        return X_idx.values.tolist(), X_value.values.tolist(), y.values.tolist(), features, \
+               category_index.values.tolist(), continuous_value.values.tolist()
 
     def __repr__(self):
         fmt_str = 'Dataset ' + self.__class__.__name__ + '\n'

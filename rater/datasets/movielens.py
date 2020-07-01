@@ -22,6 +22,7 @@ import pandas as pd
 from six.moves import input
 
 from . import download_builtin_dataset, BUILTIN_DATASETS
+from ..features.feature_dict import FeatureDict, process_features
 
 
 class Movielens:
@@ -88,9 +89,9 @@ class Movielens:
             raise ValueError('line_format parameter is incorrect.')
 
         self.data_file = dataset.path
-        self.data = self.read_ratings(dataset.path)
+        self.data = self.read_data(dataset.path)
 
-    def read_ratings(self, file_name):
+    def read_data(self, file_name):
         """Return a list of ratings (user, item, rating, timestamp) read from file_name"""
         file_path = os.path.expanduser(file_name)
         data = pd.read_csv(file_path, delimiter=self.sep, header=None)
@@ -107,6 +108,29 @@ class Movielens:
         # Add cols
         data[self.columns] = data[self.columns].fillna(0)
         return data
+
+    def get_features(self, binarize=True):
+        """
+        Get feature dict
+        :param binarize: bool
+        :return:
+        """
+        # build feature instance
+        features = FeatureDict()
+        for column in ['user', 'item']:
+            features.add_categorical_feat(column)
+
+        X_idx, X_value = process_features(features, self.data)
+        y = self.data.rating
+        if binarize:
+            def transform_y(label):
+                if label > 3:
+                    return 1
+                else:
+                    return 0
+
+            y = y.apply(transform_y)
+        return X_idx, X_value, y, features
 
     def __repr__(self):
         fmt_str = 'Dataset ' + self.__class__.__name__ + '\n'

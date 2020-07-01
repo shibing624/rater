@@ -10,7 +10,7 @@ import numpy as np
 import numpy.testing as np_test
 from numpy.random import RandomState
 
-from recommender.metrics.rating import RMSE
+from rater.metrics.rating import RMSE
 
 
 class TestRMSE(unittest.TestCase):

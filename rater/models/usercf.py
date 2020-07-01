@@ -10,8 +10,8 @@ import random
 
 from sklearn.model_selection import train_test_split
 
-import recommender
-from recommender.utils.logger import timer
+import rater
+from rater.utils.logger import timer
 
 
 class Dataset:
@@ -28,7 +28,7 @@ class Dataset:
         data = []
         with open(fp) as f:
             for l in f:
-                data.append(tuple(map(int, l.strip().split('::')[:2])))
+                data.append(tuple(map(int, l.strip().split('\t')[:2])))
         return data
 
     @timer
@@ -331,7 +331,7 @@ def user_iif_alg(train, K, N):
 # 4. UserIIF实验, K=80
 
 class Experiment:
-    def __init__(self, M, K, N, fp=os.path.join(recommender.movielens_1m_dir, 'ratings.dat'), name='UserCF'):
+    def __init__(self, M, K, N, fp='', name='UserCF'):
         '''
         :params: M, 进行多少次实验
         :params: K, TopK相似用户的个数
@@ -347,7 +347,9 @@ class Experiment:
         self.name = name
         self.algs = {'Random': random_alg, 'MostPopular': most_popular_alg, 'UserCF': user_cf_alg,
                      'UserIIF': user_iif_alg}
-        self.dataset = Dataset(self.fp)
+        from rater.datasets.movielens import Movielens
+        data = Movielens()
+        self.dataset = Dataset(data.ratings_file)
 
     # 定义单次实验
     @timer
