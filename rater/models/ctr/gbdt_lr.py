@@ -36,6 +36,8 @@ class GBDTLR(nn.Module):
         :param data: input tensor
         :return: predict y
         """
+        if not self.gbdt_trained:
+            raise ValueError("need train gbdt model first.")
         pred_y, feat_index = self.gbdt.pred(data)
         y = self.logistic_layer(feat_index)
         return y

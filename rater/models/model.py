@@ -34,7 +34,6 @@ def train_model(model, model_path, dataset, loss_func, optimizer, device,
     # if model_path exists, load the checkpoint and continue training
     curr_epoch = 0
     if model_path and os.path.exists(model_path):
-        # model = torch.load(model_path)
         checkpoint = torch.load(model_path)
         model.load_state_dict(checkpoint['model_state_dict'])
         optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
@@ -120,8 +119,6 @@ def fit(model, epochs, train_loader, val_loader, loss_func, optimizer, model_pat
             'optimizer_state_dict': optimizer.state_dict(),
             'epoch': epoch + 1,
             'loss': avg_train_loss}, model_path)
-
-        # torch.save(model, model_path)
         logger.debug('model saved:{}'.format(model_path))
 
         # early_stopping needs the validation loss to check if it has decrease,

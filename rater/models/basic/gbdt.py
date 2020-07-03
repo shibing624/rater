@@ -44,8 +44,7 @@ class GBDT:
         :return: object, Returns self.
         """
         X_train, X_test, y_train, y_test = train_test_split(data, y, test_size=val_ratio)
-        val_set = lgb.Dataset(X_test, label=y_test, free_raw_data=False)
-        self.model.fit(X_train, y_train, eval_set=val_set, early_stopping_rounds=early_stopping_rounds)
+        self.model.fit(X_train, y_train, eval_set=[(X_test, y_test)], early_stopping_rounds=early_stopping_rounds)
 
     def pred(self, data):
         """

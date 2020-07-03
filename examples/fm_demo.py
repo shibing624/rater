@@ -13,6 +13,7 @@ from torch.utils.data.dataset import TensorDataset
 from rater.models.ctr.fm import FM
 from rater.models.model import train_model
 from rater.utils.logger import logger
+
 logger.setLevel('INFO')
 pwd_path = os.path.abspath(os.path.dirname(__file__))
 
@@ -39,9 +40,10 @@ def train(x_idx, x_value, label, features, out_type='binary'):
 if __name__ == '__main__':
     # load criteo sample dataset
     from rater.datasets.criteo import Criteo
-    dataset = Criteo(n_samples=1000)
+
+    dataset = Criteo(n_samples=-1)
     # from rater.datasets.movielens import Movielens
-    # dataset = Movielens(n_samples=10000)
+    # dataset = Movielens(n_samples=-1)
     features, X_idx, X_value, y, category_index, continuous_value = dataset.get_features()
 
     print("X_idx[0], X_value[0], y[0] :\n", X_idx[0], X_value[0], y[0])

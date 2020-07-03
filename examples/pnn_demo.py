@@ -26,7 +26,7 @@ def train(x_idx, x_value, label, features, out_type='binary'):
     y_tensor = y_tensor.reshape(-1, 1)
 
     X = TensorDataset(X_idx_tensor, y_tensor)
-    model = PNN(emb_dim=5, num_feats=features.feature_size(), num_fields=features.field_size(),
+    model = PNN(feature_size=features.feature_size(), field_size=features.field_size(),
                 out_type=out_type).to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
 
@@ -39,7 +39,7 @@ def train(x_idx, x_value, label, features, out_type='binary'):
 
 if __name__ == '__main__':
     # load criteo sample dataset
-    dataset = Criteo(n_samples=1000)
+    dataset = Criteo(n_samples=-1)
     features, X_idx, X_value, y, category_index, continuous_value = dataset.get_features()
 
     print("X_idx[0], X_value[0], y[0] :\n", X_idx[0], X_value[0], y[0])

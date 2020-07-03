@@ -32,14 +32,13 @@ def train(x_idx, x_value, label, features, out_type='binary'):
 
     model_path = os.path.join(pwd_path, 'nfm_model.pt')
     model, loss_history = train_model(model=model, model_path=model_path, dataset=X, loss_func=nn.BCELoss(),
-                                      optimizer=optimizer, device=device, val_size=0.2, batch_size=32, epochs=10,
-                                      shuffle=True)
+                                      optimizer=optimizer, device=device, val_size=0.2, batch_size=32, epochs=10)
     print(loss_history)
 
 
 if __name__ == '__main__':
     # load criteo sample dataset
-    dataset = Criteo(n_samples=1000)
+    dataset = Criteo(n_samples=-1)
     features, X_idx, X_value, y, category_index, continuous_value = dataset.get_features()
 
     print("X_idx[0], X_value[0], y[0] :\n", X_idx[0], X_value[0], y[0])

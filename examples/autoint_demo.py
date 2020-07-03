@@ -40,8 +40,7 @@ def train(x_idx, x_value, label, features, out_type='binary'):
 
 if __name__ == '__main__':
     # load criteo sample dataset
-    dataset = Criteo(n_samples=1000)
-    dataset = Movielens(n_samples=10000)
+    dataset = Criteo()
     features, X_idx, X_value, y, category_index, continuous_value = dataset.get_features()
     print(features.feature_size(), features.field_size())
 

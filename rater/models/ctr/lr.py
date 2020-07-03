@@ -14,15 +14,15 @@ class LR(nn.Module):
     LR model
     """
 
-    def __init__(self, num_feats, out_type='binary'):
+    def __init__(self, feature_size, out_type='binary'):
         """
         Init
-        :param num_feats:
+        :param feature_size:
         :param out_type:
         """
         super(LR, self).__init__()
-        self.num_feats = num_feats
-        self.weights = nn.Embedding(num_embeddings=num_feats, embedding_dim=1)
+        self.feature_size = feature_size
+        self.weights = nn.Embedding(num_embeddings=feature_size, embedding_dim=1)
         self.bias = nn.Parameter(torch.randn(1))
         self.output_layer = OutputLayer(1, out_type)
 

@@ -5,15 +5,13 @@
 """
 
 from surprise import Dataset
-# 可以使用上面提到的各种推荐系统算法
 from surprise import SVD
 from surprise.model_selection import cross_validate
 
 # 默认载入movielens数据集
 data = Dataset.load_builtin('ml-100k')
 print(data)
-print(data[:10])
-# k折交叉验证(k=3),此方法现已弃用
+# k折交叉验证(k=3)
 # data.split(n_folds=3)
 # 试一把SVD矩阵分解
 algo = SVD()
@@ -64,13 +62,6 @@ print(perf)
 from surprise import SVD
 
 algo = SVD()
-perf = cross_validate(algo, data, measures=['RMSE', 'MAE'], cv=3)
-print(perf)
-
-### 使用SVD++
-from surprise import SVDpp
-
-algo = SVDpp()
 perf = cross_validate(algo, data, measures=['RMSE', 'MAE'], cv=3)
 print(perf)
 
