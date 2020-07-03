@@ -1,28 +1,41 @@
 # -*- coding: utf-8 -*-
 """
 @author:XuMing(xuming624@qq.com)
-@description:
+@description: FM model
 """
 import torch
 import torch.nn as nn
 
-from ..basic.functional import bi_interaction
-from ..basic.output_layer import OutputLayer
+from rater.models.basic.functional import bi_interaction
+from rater.models.basic.output_layer import OutputLayer
 
 
 class FM(nn.Module):
-    def __init__(self, emb_dim, num_feats, out_type='binary'):
+    def __init__(self, feature_size, embedding_size=5, out_type='binary'):
+        """
+        Init model
+        :param feature_size: int, size of the feature dictionary
+        :param embedding_size: int, size of the feature embedding
+        :param out_type: str, output layer function, binary is Sigmoid
+        """
         super(FM, self).__init__()
-        self.emb_dim = emb_dim
-        self.num_feats = num_feats
-        self.emb_layer = nn.Embedding(num_embeddings=num_feats, embedding_dim=emb_dim)
+        self.feature_size = feature_size
+        self.embedding_size = embedding_size
+
+        self.emb_layer = nn.Embedding(num_embeddings=feature_size, embedding_dim=embedding_size)
         nn.init.xavier_uniform_(self.emb_layer.weight)
-        self.bias = nn.Parameter(torch.randn(1))
-        self.first_order_weights = nn.Embedding(num_embeddings=num_feats, embedding_dim=1)
+        self.bias = nn.Parameter(torch.randn(1), requires_grad=True)
+        self.first_order_weights = nn.Embedding(num_embeddings=feature_size, embedding_dim=1)
         nn.init.xavier_uniform_(self.first_order_weights.weight)
         self.output_layer = OutputLayer(1, out_type)
 
     def forward(self, feat_index, feat_value):
+        """
+        Forward
+        :param feat_index: index input tensor
+        :param feat_value: value input tensor
+        :return: predict y
+        """
         # With single sample, it should be expanded into 1 * F * K
         # Batch_size: N
         # feat_index_dim&feat_value_dim: F

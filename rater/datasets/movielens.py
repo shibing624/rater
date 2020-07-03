@@ -46,7 +46,7 @@ class Movielens:
 
     """
 
-    def __init__(self, name='ml-100k.zip', prompt=True, seed=None, shuffle=True, n_samples=-1):
+    def __init__(self, name='ml-100k.zip', prompt=True, shuffle=True, n_samples=-1):
         self.name = name
         self.shuffle = shuffle
         self.n_samples = n_samples
@@ -113,14 +113,14 @@ class Movielens:
         """
         Get feature dict
         :param binarize: bool
-        :return:
+        :return: features, X_idx, X_value, y, category_index, continuous_value
         """
         # build feature instance
         features = FeatureDict()
         for column in ['user', 'item']:
             features.add_categorical_feat(column)
 
-        X_idx, X_value = process_features(features, self.data)
+        X_idx, X_value, category_index, continuous_value = process_features(features, self.data)
         y = self.data.rating
         if binarize:
             def transform_y(label):
@@ -130,7 +130,7 @@ class Movielens:
                     return 0
 
             y = y.apply(transform_y)
-        return X_idx, X_value, y, features
+        return features, X_idx, X_value, y, category_index, continuous_value
 
     def __repr__(self):
         fmt_str = 'Dataset ' + self.__class__.__name__ + '\n'

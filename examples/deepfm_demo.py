@@ -12,7 +12,7 @@ from torch.utils.data.dataset import TensorDataset
 
 from rater.datasets.criteo import Criteo
 from rater.models.ctr.deepfm import DeepFM
-from rater.models.train import train_model
+from rater.models.model import train_model
 
 pwd_path = os.path.abspath(os.path.dirname(__file__))
 
@@ -26,7 +26,7 @@ def train(x_idx, x_value, label, features, out_type='binary'):
     y_tensor = y_tensor.reshape(-1, 1)
 
     X = TensorDataset(X_idx_tensor, X_value_tensor, y_tensor)
-    model = DeepFM(emb_dim=5, num_feats=features.get_num_feats(), num_fields=features.get_num_fields(),
+    model = DeepFM(emb_dim=5, feat_dim=features.feature_size(), num_fields=features.field_size(),
                    out_type=out_type).to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
 
@@ -39,5 +39,9 @@ def train(x_idx, x_value, label, features, out_type='binary'):
 
 if __name__ == '__main__':
     # load criteo sample dataset
-    dataset = Criteo()
-    train(dataset.X_idx, dataset.X_value, dataset.y, dataset.features)
+    dataset = Criteo(n_samples=1000)
+    features, X_idx, X_value, y, category_index, continuous_value = dataset.get_features()
+    print(features.feature_size(), features.field_size())
+
+    print("X_idx[:2], X_value[:2], y[:2] :\n", X_idx[:2], X_value[:2], y[:2])
+    train(X_idx, X_value, y, features)

@@ -3,10 +3,9 @@
 @author:XuMing(xuming624@qq.com)
 @description: 基于隐语义模型
 """
-import os
 
 import numpy as np
-import rater
+
 from rater.models.usercf import Dataset, Metric
 from rater.utils.logger import timer
 
@@ -88,10 +87,15 @@ def lfm_alg(train, ratio, K, lr, step, lmbda, N):
 # 三. LFM实验
 # M=8, N=10, ratio=[1, 2, 3, 5, 10, 20] ratio参数对LFM的性能影响最大，固定K=100, lr=0.02, step=100, lmbda=0.01，
 # 只研究正负样本比例的影响
+from rater.datasets import BUILTIN_DATASETS
+
+data_path = BUILTIN_DATASETS['ml-100k.zip'].path
+
+
 class Experiment:
     def __init__(self, M, N, ratio=1,
                  K=100, lr=0.02, step=100, lmbda=0.01,
-                 fp=os.path.join(rater.get_dataset_dir(), 'ratings.dat'), name='LFM'):
+                 fp=data_path, name='LFM'):
         """
         :params: M, 进行多少次实验
         :params: N, TopN推荐物品的个数

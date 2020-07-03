@@ -27,26 +27,6 @@ from torch.autograd import Variable
 class DCN(torch.nn.Module):
     """
     Network
-    -------------
-    field_size: size of the feature fields
-    feature_sizes: a field_size-dim array, sizes of the feature dictionary
-    embedding_size: size of the feature embedding
-    deep_layers: a h_depth-dim array, each element is the size of corresponding hidden layers. example:[32,32] h_depth = 2
-    is_deep_dropout: bool, deep part uses dropout or not?
-    dropout_deep: an array of dropout factors,example:[0.5,0.5,0.5] h_depth=2
-    deep_layers_activation: relu or sigmoid etc
-    learning_rate: learning_rate
-    optimizer_type: optimizer_type, 'adam', 'rmsp', 'sgd', 'adag'
-    is_batch_norm：bool,  use batch_norm or not ?
-    weight_decay: weight decay (L2 penalty)
-    random_seed: random_seed=0
-    use_cross: bool
-    use_inner_prodcut: bool
-    use_deep:bool
-    eval_metric: roc_auc_score
-    use_cuda: bool use gpu or cpu?
-    n_class: number of classes. is bounded to 1
-
     """
 
     def __init__(self, field_size, feature_sizes, embedding_size=4,

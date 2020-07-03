@@ -103,24 +103,25 @@ class Criteo:
 
         return data
 
-    def get_features(self, discretize=False):
+    def get_features(self, use_continuous_columns=True, use_category_columns=True, transformation=None,
+                     discretize=None, discretize_bin=None, all_categories=None):
         """
         Get feature dict
-        :param discretize: bool
-        :return:
         """
         # build feature instance
         features = FeatureDict()
-        for column in self.continuous_columns:
-            features.add_continuous_feat(column, discretize=discretize)
-        for column in self.category_columns:
-            features.add_categorical_feat(column)
+        if use_continuous_columns:
+            for column in self.continuous_columns:
+                features.add_continuous_feat(column, transformation=transformation, discretize=discretize,
+                                             discretize_bin=discretize_bin)
+        if use_category_columns:
+            for column in self.category_columns:
+                features.add_categorical_feat(column, all_categories=all_categories)
 
-        X_idx, X_value, category_index, continuous_value = process_features(features, self.data)
+        X_idx, X_value, categorical_index, continuous_value = process_features(features, self.data)
         y = self.data.label
 
-        return X_idx.values.tolist(), X_value.values.tolist(), y.values.tolist(), features, \
-               category_index.values.tolist(), continuous_value.values.tolist()
+        return features, X_idx, X_value, y, categorical_index, continuous_value
 
     def __repr__(self):
         fmt_str = 'Dataset ' + self.__class__.__name__ + '\n'
