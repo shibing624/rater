@@ -27,9 +27,9 @@ class AutoInt(nn.Module):
         :param feature_size: int, size of the feature dictionary
         :param field_size: int, size of the feature fields
         :param embedding_size: int, size of the feature embedding
-        :param projection_dim:
-        :param num_heads:
-        :param use_res: bool,
+        :param projection_dim: int, embedding size of attention
+        :param num_heads: multi head self attention
+        :param use_res: bool, is or not use standard residual connections before output.
         :param out_type: str, output layer function, binary is Sigmoid
         """
         super(AutoInt, self).__init__()

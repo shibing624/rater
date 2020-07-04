@@ -49,6 +49,7 @@ class WideAndDeep(nn.Module):
 
         self.wide_bias = nn.Parameter(torch.randn(1), requires_grad=True)
 
+        fc_dims = fc_dims if fc_dims else [32, 32]
         fc_dims.append(1)
         self.fc_dims = fc_dims
 
@@ -56,8 +57,8 @@ class WideAndDeep(nn.Module):
         self.emb_layer = nn.Embedding(num_embeddings=feature_size - continuous_field_size, embedding_dim=embedding_size)
         nn.init.xavier_uniform_(self.emb_layer.weight)
 
-        self.deep = MLP(continuous_field_size + categorical_field_size * embedding_size, fc_dims, dropout,
-                        is_batch_norm)
+        self.deep = MLP(continuous_field_size + categorical_field_size * embedding_size, fc_dims=fc_dims, dropout=dropout,
+                        is_batch_norm=is_batch_norm)
         self.out_layer = OutputLayer(in_dim=1, out_type=out_type)
 
     def forward(self, categorical_index, continuous_value):

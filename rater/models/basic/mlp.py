@@ -2,10 +2,10 @@ import torch.nn as nn
 
 
 class MLP(nn.Module):
-    def __init__(self, feature_size, fc_dims=[], dropout=0.0, is_batch_norm=False):
+    def __init__(self, input_size, fc_dims=[], dropout=0.0, is_batch_norm=False):
         super(MLP, self).__init__()
         self.fc_dims = fc_dims
-        layer_dims = [feature_size]
+        layer_dims = [input_size]
         if fc_dims:
             layer_dims.extend(fc_dims)
         layers = []

@@ -26,11 +26,11 @@ def train(x_idx, x_value, label, features, out_type='binary'):
     y_tensor = y_tensor.reshape(-1, 1)
 
     X = TensorDataset(X_idx_tensor, y_tensor)
-    model = FLEN(features.feature_size(), features.field_size(), #field_ranges=features.field_range(),
+    model = FLEN(features.feature_size(), features.field_size(), features.feature_size(), field_ranges=features.field_range(),
                     out_type=out_type).to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
 
-    model_path = os.path.join(pwd_path, 'autoint_model.pt')
+    model_path = os.path.join(pwd_path, 'flen_model.pt')
     model, loss_history = train_model(model=model, model_path=model_path, dataset=X, loss_func=nn.BCELoss(),
                                       optimizer=optimizer, device=device, val_size=0.2, batch_size=32, epochs=10)
     print(loss_history)
@@ -38,7 +38,7 @@ def train(x_idx, x_value, label, features, out_type='binary'):
 
 if __name__ == '__main__':
     # load criteo sample dataset
-    dataset = Criteo(n_samples=1000)
+    dataset = Criteo(n_samples=100)
     features, X_idx, X_value, y, category_index, continuous_value = dataset.get_features(use_continuous_columns=True,
                                                                                          use_category_columns=True)
     print(features.feature_size(), features.field_size())

@@ -21,7 +21,7 @@ class FLEN(nn.Module):
     FLEN Network
     """
 
-    def __init__(self, feature_size, num_categories, field_ranges, embedding_size=5, fc_dims=[32, 32, 32],
+    def __init__(self, feature_size, field_size, num_categories, field_ranges, embedding_size=5, fc_dims=[32, 32, 32],
                  dropout=0.0, is_batch_norm=False, out_type='binary'):
         """
         Init model
@@ -41,7 +41,7 @@ class FLEN(nn.Module):
         if not field_ranges:
             field_ranges = torch.tensor(range(num_categories))
         self.field_ranges = field_ranges
-        self.num_fields = len(field_ranges)
+        self.field_size = field_size
 
         # embedding layer
         self.emb_layer = nn.Embedding(num_embeddings=feature_size, embedding_dim=embedding_size)
@@ -53,17 +53,17 @@ class FLEN(nn.Module):
         self.first_order_bias = nn.Parameter(torch.randn(1))
 
         # MF part
-        self.num_pairs = int(self.num_fields * (self.num_fields - 1) / 2)
+        self.num_pairs = int(self.field_size * (self.field_size - 1) / 2)
         self.r_mf = nn.Parameter(torch.zeros(self.num_pairs, 1))  # num_pairs * 1
         nn.init.xavier_uniform_(self.r_mf.data)
 
         # FM part
-        self.r_fm = nn.Parameter(torch.zeros(self.num_fields, 1))  # num_fields * 1
+        self.r_fm = nn.Parameter(torch.zeros(self.field_size, 1))  # field_size * 1
         nn.init.xavier_uniform_(self.r_fm.data)
 
         # dnn
         self.fc_dims = fc_dims
-        self.fc_layers = MLP(fc_dims, dropout, is_batch_norm)
+        self.fc_layers = MLP(input_size=feature_size, fc_dims=fc_dims, dropout=dropout, is_batch_norm=is_batch_norm)
 
         self.output_layer = OutputLayer(fc_dims[-1] + 1 + self.embedding_size, out_type)
 
@@ -84,7 +84,7 @@ class FLEN(nn.Module):
             torch.sum(field_wise_emb, dim=1).unsqueeze(dim=1)  # N * embedding_size
             for field_wise_emb in field_wise_emb_list
         ]
-        field_emb = torch.cat(field_emb_list, dim=1)  # N * num_fields * embedding_size
+        field_emb = torch.cat(field_emb_list, dim=1)  # N * field_size * embedding_size
         # S part
         y_S = self.first_order_weights(feat_index)  # N * num_categories * 1
         y_S = y_S.squeeze()  # N * num_categories
@@ -93,7 +93,7 @@ class FLEN(nn.Module):
         y_S = y_S.unsqueeze(dim=1)  # N * 1
 
         # MF part -> N * embedding_size
-        p, q = build_cross(self.num_fields, field_emb)  # N * num_pairs * embedding_size
+        p, q = build_cross(self.field_size, field_emb)  # N * num_pairs * embedding_size
         y_MF = torch.mul(p, q)  # N * num_pairs * embedding_size
         y_MF = torch.mul(y_MF, self.r_mf)  # N * num_pairs * embedding_size
         y_MF = torch.sum(y_MF, dim=1)  # N * embedding_size
@@ -103,12 +103,12 @@ class FLEN(nn.Module):
             bi_interaction(field_wise_emb).unsqueeze(dim=1)  # N * 1 * embedding_size
             for field_wise_emb in field_wise_emb_list
         ]
-        field_wise_fm = torch.cat(field_wise_fm, dim=1)  # N * num_fields * embedding_size
-        y_FM = torch.mul(field_wise_fm, self.r_fm)  # N * num_fields * embedding_size
+        field_wise_fm = torch.cat(field_wise_fm, dim=1)  # N * field_size * embedding_size
+        y_FM = torch.mul(field_wise_fm, self.r_fm)  # N * field_size * embedding_size
         y_FM = torch.sum(y_FM, dim=1)  # N * embedding_size
 
         # dnn
-        fc_in = field_emb.reshape((-1, self.num_fields * self.embedding_size))
+        fc_in = field_emb.reshape((-1, self.field_size * self.embedding_size))
         y_dnn = self.fc_layers(fc_in)
 
         # output

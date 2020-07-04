@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 @author:XuMing(xuming624@qq.com)
-@description: LR
+@description: LogisticRegression
 """
 import torch
 import torch.nn as nn
@@ -14,16 +14,16 @@ class LR(nn.Module):
     LR model
     """
 
-    def __init__(self, feature_size, out_type='binary'):
+    def __init__(self, input_size, out_type='binary'):
         """
         Init
-        :param feature_size:
+        :param input_size:
         :param out_type:
         """
         super(LR, self).__init__()
-        self.feature_size = feature_size
-        self.weights = nn.Embedding(num_embeddings=feature_size, embedding_dim=1)
-        self.bias = nn.Parameter(torch.randn(1))
+        self.feature_size = input_size
+        self.weights = nn.Embedding(num_embeddings=input_size, embedding_dim=1)
+        self.bias = nn.Parameter(torch.randn(1), requires_grad=True)
         self.output_layer = OutputLayer(1, out_type)
 
     def forward(self, feat_index, feat_value):

@@ -35,11 +35,11 @@ class DeepFM(nn.Module):
         self.embedding_size = embedding_size
 
         # fm
-        self.fm = FM(embedding_size, feature_size, out_type='regression')
+        self.fm = FM(feature_size=feature_size, embedding_size=embedding_size, out_type='regression')
 
         # dnn
-        self.fc_dims = fc_dims
-        self.dnn = MLP(embedding_size * field_size, fc_dims, dropout, is_batch_norm)
+        self.fc_dims = fc_dims if fc_dims else [32, 32, 32]
+        self.dnn = MLP(embedding_size * field_size, fc_dims=fc_dims, dropout=dropout, is_batch_norm=is_batch_norm)
 
         # output
         self.output_layer = OutputLayer(fc_dims[-1] + 1, out_type)

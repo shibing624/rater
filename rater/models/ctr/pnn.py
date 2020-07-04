@@ -46,6 +46,7 @@ class PNN(nn.Module):
                                       embedding_dim=self.embedding_size)
         nn.init.xavier_uniform_(self.emb_layer.weight)
 
+        fc_dims = fc_dims if fc_dims else[32, 32]
         # linear signal layer, named l_z
         self.d1 = d1 = fc_dims[0]
         self.product_type = product_type
@@ -65,10 +66,10 @@ class PNN(nn.Module):
         # fc layers
         # l_1=relu(l_z+l_p_b_1)
         self.l1_layer = nn.ReLU()
-        self.l1_bias = nn.Parameter(torch.randn(d1))
+        self.l1_bias = nn.Parameter(torch.randn(d1), requires_grad=True)
         # l_2 to l_n
         self.fc_dims = fc_dims
-        self.fc_layers = MLP(d1, self.fc_dims, dropout, is_batch_norm)
+        self.fc_layers = MLP(d1, fc_dims=fc_dims, dropout=dropout, is_batch_norm=is_batch_norm)
 
         # output layer
         self.output_layer = OutputLayer(fc_dims[-1], out_type)

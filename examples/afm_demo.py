@@ -49,7 +49,7 @@ def predict(x_idx, x_value, features, out_type='binary'):
     from rater.models.model import predict_model
     model_path = os.path.join(pwd_path, 'afm_model.pt')
     preds = predict_model(model=model, model_path=model_path, dataset=X, device=device)
-    print(preds)
+    return preds
 
 
 if __name__ == '__main__':
@@ -61,5 +61,8 @@ if __name__ == '__main__':
     print("X_idx[0], X_value[0], y[0] :\n", X_idx[0], X_value[0], y[0])
     train(X_idx, X_value, y, features)
 
-    predict(X_idx[:10], X_value[:10], features)
-    print("truth y:", y[:10])
+    pred_y = predict(X_idx[:100], X_value[:100], features)
+    print("truth y:", y[:100], 'pred_y', pred_y)
+    from sklearn.metrics import roc_auc_score
+    score = roc_auc_score(y[:100], pred_y)
+    print('auc:', score)

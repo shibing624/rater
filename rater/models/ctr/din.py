@@ -454,20 +454,3 @@ class DIN(torch.nn.Module):
         y_pred = self.inner_predict_proba(Xi, Xv)
         return self.eval_metric(y.cpu().data.numpy(), y_pred)
 
-
-if __name__ == '__main__':
-    import os
-    from rater.utils import data_preprocess
-
-    pwd_path = os.path.abspath(os.path.dirname(__file__))
-    result_dict = data_preprocess.read_criteo_data(os.path.join(pwd_path, './tiny_train_input.csv'),
-                                                   os.path.join(pwd_path, './category_emb.csv'))
-    test_dict = data_preprocess.read_criteo_data(os.path.join(pwd_path, './tiny_test_input.csv'),
-                                                 os.path.join(pwd_path, './category_emb.csv'))
-
-    print(len(result_dict['feature_sizes']))
-    print(result_dict['feature_sizes'])
-    m = DIN(39, result_dict['feature_sizes'])
-    m.fit(result_dict['index'][0:10000], result_dict['value'][0:10000], result_dict['label'][0:10000],
-          test_dict['index'][0:10000], test_dict['value'][0:10000], test_dict['label'][0:10000], early_stopping=True,
-          save_path='din_model.pt')

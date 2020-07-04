@@ -44,8 +44,8 @@ class NFM(nn.Module):
         nn.init.xavier_uniform_(self.emb_layer.weight)
 
         self.bi_intaraction_layer = BiInteractionLayer()
-        self.fc_dims = fc_dims
-        self.fc_layers = MLP(embedding_size, fc_dims, dropout, is_batch_norm)
+        self.fc_dims = fc_dims if fc_dims else [32, 32]
+        self.fc_layers = MLP(embedding_size, fc_dims=fc_dims, dropout=dropout, is_batch_norm=is_batch_norm)
         self.output_layer = OutputLayer(in_dim=fc_dims[-1], out_type=out_type)
 
     def forward(self, feat_index, feat_value):

@@ -26,7 +26,7 @@ def train(x_idx, x_value, label, features, out_type='binary'):
     y_tensor = y_tensor.reshape(-1, 1)
 
     X = TensorDataset(X_idx_tensor, X_value_tensor, y_tensor)
-    model = LR(feature_size=features.feature_size(),
+    model = LR(input_size=features.feature_size(),
                out_type=out_type).to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
 
@@ -44,12 +44,12 @@ def predict(x_idx, x_value, features, out_type='binary'):
     X_value_tensor = torch.Tensor(x_value).to(device)
 
     X = TensorDataset(X_idx_tensor, X_value_tensor)
-    model = LR(feature_size=features.feature_size(),
+    model = LR(input_size=features.feature_size(),
                out_type=out_type).to(device)
     from rater.models.model import predict_model
     model_path = os.path.join(pwd_path, 'lr_model.pt')
     preds = predict_model(model=model, model_path=model_path, dataset=X, device=device)
-    print(preds)
+    return preds
 
 
 if __name__ == '__main__':
@@ -60,5 +60,9 @@ if __name__ == '__main__':
     print("X_idx[0], X_value[0], y[0] :\n", X_idx[0], X_value[0], y[0])
     train(X_idx, X_value, y, features)
 
-    predict(X_idx[:10], X_value[:10], features)
-    print("truth y:", y[:10])
+    pred_y = predict(X_idx[:1000], X_value[:1000], features)
+    print("truth y:", y[:50], 'pred_y', pred_y[:50])
+    from sklearn.metrics import roc_auc_score
+
+    score = roc_auc_score(y[:1000], pred_y[:1000])
+    print('auc:', score)

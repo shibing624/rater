@@ -26,7 +26,7 @@ def train(x_idx, x_value, label, features, out_type='binary'):
     y_tensor = y_tensor.reshape(-1, 1)
 
     X = TensorDataset(X_idx_tensor, X_value_tensor, y_tensor)
-    model = DeepFM(emb_dim=5, feat_dim=features.feature_size(), num_fields=features.field_size(),
+    model = DeepFM(feature_size=features.feature_size(), field_size=features.field_size(),
                    out_type=out_type).to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
 
@@ -37,6 +37,21 @@ def train(x_idx, x_value, label, features, out_type='binary'):
     print(loss_history)
 
 
+def predict(x_idx, x_value, features, out_type='binary'):
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+    X_idx_tensor = torch.LongTensor(x_idx).to(device)
+    X_value_tensor = torch.Tensor(x_value).to(device)
+
+    X = TensorDataset(X_idx_tensor, X_value_tensor)
+    model = DeepFM(feature_size=features.feature_size(), field_size=features.field_size(),
+                   out_type=out_type).to(device)
+    from rater.models.model import predict_model
+    model_path = os.path.join(pwd_path, 'deepfm_model.pt')
+    preds = predict_model(model=model, model_path=model_path, dataset=X, device=device)
+    return preds
+
+
 if __name__ == '__main__':
     # load criteo sample dataset
     dataset = Criteo(n_samples=-1)
@@ -45,3 +60,10 @@ if __name__ == '__main__':
 
     print("X_idx[:2], X_value[:2], y[:2] :\n", X_idx[:2], X_value[:2], y[:2])
     train(X_idx, X_value, y, features)
+
+    pred_y = predict(X_idx[:100], X_value[:100], features)
+    print("truth y:", y[:100], 'pred_y', pred_y)
+    from sklearn.metrics import roc_auc_score
+
+    score = roc_auc_score(y[:100], pred_y)
+    print('auc:', score)
