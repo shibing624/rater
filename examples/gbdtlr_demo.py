@@ -158,26 +158,28 @@ def criteo_gdbtlr(X_idx, X_value, y):
     from sklearn.metrics import roc_auc_score
     from sklearn.linear_model import LogisticRegression
     from lightgbm.sklearn import LGBMClassifier
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
-    X_idx_tensor = torch.LongTensor(X_idx).to(device)
-    X_value_tensor = torch.Tensor(X_value).to(device)
-    y_tensor = torch.Tensor(y).to(device)
-    y_tensor = y_tensor.reshape(-1, 1)
 
     X_idx = X_idx.values.tolist()
     y = y.values.tolist()
-    num_leaves = 36
     num_leaves = 31
-    n_estimators = 100,
-    learning_rate = 0.1,
     model = LGBMClassifier(num_leaves=num_leaves)
     model.fit(X_idx, y)
     model_path = os.path.join(pwd_path, 'gbdtlr_model1.pt')
     y_pred = model.predict(X_idx, pred_leaf=True)
     y_pred_gbdt = model.predict(X_idx, pred_leaf=False)
+    acc = model.score(X_idx,y)
+    print("gbdt train acc:", acc)
     s = roc_auc_score(y, y_pred_gbdt)
     print('gbdt auc:', s)
+    import pickle  # pickle模块
+
+    # 保存Model(注:save文件夹要预先建立，否则会报错)
+    with open(model_path, 'wb') as f:
+        pickle.dump(model, f)
+
+    # # 读取Model
+    # with open('save/clf.pickle', 'rb') as f:
+    #     clf2 = pickle.load(f)
 
     transformed_matrix = np.zeros([len(y_pred), len(y_pred[0]) * num_leaves], dtype=np.int64)
     for i in range(0, len(y_pred)):
