@@ -155,7 +155,7 @@ def lightgbm_demo():
 
 def criteo_gdbtlr(X_idx, X_value, y):
     import numpy as np
-    from sklearn.metrics import roc_auc_score
+    from sklearn.metrics import roc_auc_score, accuracy_score
     from sklearn.linear_model import LogisticRegression
     from lightgbm.sklearn import LGBMClassifier
 
@@ -167,10 +167,12 @@ def criteo_gdbtlr(X_idx, X_value, y):
     model_path = os.path.join(pwd_path, 'gbdtlr_model1.pt')
     y_pred = model.predict(X_idx, pred_leaf=True)
     y_pred_gbdt = model.predict(X_idx, pred_leaf=False)
-    acc = model.score(X_idx,y)
+    acc = model.score(X_idx, y)
     print("gbdt train acc:", acc)
     s = roc_auc_score(y, y_pred_gbdt)
     print('gbdt auc:', s)
+    a = accuracy_score(y, y_pred_gbdt)
+    print('gbdt train acc:', a)
     import pickle  # pickle模块
 
     # 保存Model(注:save文件夹要预先建立，否则会报错)
@@ -192,7 +194,7 @@ def criteo_gdbtlr(X_idx, X_value, y):
     print("truth_y:", y[:100], 'y_pred_lr:', y_pred_lr[:100])
 
     s = roc_auc_score(y, y_pred_lr)
-    print('auc:',s)
+    print('auc:', s)
 
 
 if __name__ == '__main__':
