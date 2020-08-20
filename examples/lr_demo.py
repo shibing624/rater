@@ -7,9 +7,9 @@
 import os
 import sys
 
-from sklearn.metrics import roc_auc_score
 import torch
 import torch.nn as nn
+from sklearn.metrics import roc_auc_score
 from torch.utils.data.dataset import TensorDataset
 
 sys.path.append("..")

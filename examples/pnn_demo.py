@@ -5,11 +5,13 @@
 """
 
 import os
+import sys
 
 import torch
 import torch.nn as nn
 from torch.utils.data.dataset import TensorDataset
 
+sys.path.append("..")
 from rater.datasets.criteo import Criteo
 from rater.models.ctr.pnn import PNN
 from rater.models.model import train_model
