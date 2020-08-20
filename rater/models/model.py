@@ -80,8 +80,8 @@ def fit(model, epochs, train_loader, val_loader, loss_func, optimizer, model_pat
 
             train_loss += loss.item()
             batch_nums += 1
-            pred_y_lst.extend(pred_y.data.numpy())
-            y_lst.extend(y.data.numpy())
+            pred_y_lst.extend(pred_y.data.cpu())
+            y_lst.extend(y.data.cpu())
 
         # calculate average loss and auc during the epoch
         avg_train_loss = train_loss / batch_nums if batch_nums > 0 else 0.
@@ -102,8 +102,8 @@ def fit(model, epochs, train_loader, val_loader, loss_func, optimizer, model_pat
 
             val_loss += loss.item()
             batch_nums += 1
-            pred_y_lst.extend(pred_y.data.numpy())
-            y_lst.extend(y.data.numpy())
+            pred_y_lst.extend(pred_y.data.cpu())
+            y_lst.extend(y.data.cpu())
 
         # calculate valid loss and valid auc score
         avg_val_loss = val_loss / batch_nums if batch_nums > 0 else 0.
@@ -154,6 +154,6 @@ def predict_model(model, model_path, dataset, device, batch_size=128):
     for step, tensors in enumerate(test_loader):
         X = tensors[:]
         pred_y = model(*X)
-        pred_y_lst.extend(pred_y.data.numpy())
+        pred_y_lst.extend(pred_y.data.cpu())
     logger.info('predict end')
     return pred_y_lst

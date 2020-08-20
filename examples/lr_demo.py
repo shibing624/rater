@@ -5,11 +5,14 @@
 """
 
 import os
+import sys
 
+from sklearn.metrics import roc_auc_score
 import torch
 import torch.nn as nn
 from torch.utils.data.dataset import TensorDataset
 
+sys.path.append("..")
 from rater.datasets.criteo import Criteo
 from rater.models.ctr.lr import LR
 from rater.models.model import train_model
@@ -19,7 +22,6 @@ pwd_path = os.path.abspath(os.path.dirname(__file__))
 
 def train(x_idx, x_value, label, features, out_type='binary'):
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
     X_idx_tensor = torch.LongTensor(x_idx).to(device)
     X_value_tensor = torch.Tensor(x_value).to(device)
     y_tensor = torch.Tensor(label).to(device)
@@ -62,7 +64,6 @@ if __name__ == '__main__':
 
     pred_y = predict(X_idx[:1000], X_value[:1000], features)
     print("truth y:", y[:50], 'pred_y', pred_y[:50])
-    from sklearn.metrics import roc_auc_score
 
     score = roc_auc_score(y[:1000], pred_y[:1000])
     print('auc:', score)

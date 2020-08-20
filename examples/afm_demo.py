@@ -5,11 +5,14 @@
 """
 
 import os
+import sys
 
 import torch
 import torch.nn as nn
 from torch.utils.data.dataset import TensorDataset
+from sklearn.metrics import roc_auc_score
 
+sys.path.append("..")
 from rater.datasets.criteo import Criteo
 from rater.models.ctr.afm import AFM
 from rater.models.model import train_model
@@ -63,6 +66,5 @@ if __name__ == '__main__':
 
     pred_y = predict(X_idx[:100], X_value[:100], features)
     print("truth y:", y[:100], 'pred_y', pred_y)
-    from sklearn.metrics import roc_auc_score
     score = roc_auc_score(y[:100], pred_y)
     print('auc:', score)
