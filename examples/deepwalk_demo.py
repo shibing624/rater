@@ -16,8 +16,8 @@ from rater.models.graph.classify import read_node_label, Classifier
 from rater.models.graph.deepwalk import DeepWalk
 
 pwd_path = os.path.abspath(os.path.dirname(__file__))
-label_file = os.path.join(pwd_path, './data/wiki/wiki_labels.txt')
-edge_file = os.path.join(pwd_path, './data/wiki/wiki_edgelist.txt')
+label_file = os.path.join(pwd_path, '../data/wiki/wiki_labels.txt')
+edge_file = os.path.join(pwd_path, '../data/wiki/wiki_edgelist.txt')
 
 
 def evaluate_embeddings(embeddings, label_file):
@@ -36,7 +36,8 @@ def plot_embeddings(embeddings, label_file):
     for k in X:
         emb_list.append(embeddings[k])
     emb_list = np.array(emb_list)
-
+    # TSNE, 流形学习方法(Manifold Learning)，简称流形学习,
+    # 对高维数据降维，将原始数据可视化
     model = TSNE(n_components=2)
     node_pos = model.fit_transform(emb_list)
 

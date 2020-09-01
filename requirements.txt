@@ -3,3 +3,4 @@ scikit-learn
 scipy>=0.18.1
 pandas
 lightgbm # (mac: brew install libomp)
+networkx

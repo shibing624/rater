@@ -16,8 +16,8 @@ from rater.models.graph.classify import read_node_label, Classifier
 from rater.models.graph.struct2vec import Struc2Vec
 
 pwd_path = os.path.abspath(os.path.dirname(__file__))
-label_file = os.path.join(pwd_path, './data/flight/labels-brazil-airports.txt')
-edge_file = os.path.join(pwd_path, './data/flight/brazil-airports.edgelist')
+label_file = os.path.join(pwd_path, '../data/flight/labels-brazil-airports.txt')
+edge_file = os.path.join(pwd_path, '../data/flight/brazil-airports.edgelist')
 
 
 def evaluate_embeddings(embeddings, label_file):

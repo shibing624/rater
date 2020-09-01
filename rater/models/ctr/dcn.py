@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 @author:XuMing(xuming624@qq.com), jachin, Nie
-@description: A pytorch implementation of NFM
+@description: A pytorch implementation of DCN
 
 Reference:
 [1] Deep & Cross Network for Ad Click Predictions (Stanford 2017)

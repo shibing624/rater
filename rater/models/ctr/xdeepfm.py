@@ -1,110 +1,120 @@
-# -*- coding:utf-8 -*-
+# -*- coding: utf-8 -*-
 """
-Author:
-    Wutong Zhang
+@author:XuMing(xuming624@qq.com), Wutong Zhang
+@description: PyTorch implementation of xDeepFM
+
 Reference:
-    [1] Guo H, Tang R, Ye Y, et al. Deepfm: a factorization-machine based neural network for ctr prediction[J]. arXiv preprint arXiv:1703.04247, 2017.(https://arxiv.org/abs/1703.04247)
+[1] xDeepFM: Combining Explicit and Implicit Feature Interactionsfor Recommender Systems,
+    Jianxun Lian, Xiaohuan Zhou, Fuzheng Zhang, Zhongxia Chen, Xing Xie,and Guangzhong Sun
+    https://arxiv.org/pdf/1803.05170.pdf
+[2] TensorFlow implementation of xDeepFM
+    https://github.com/Leavingseason/xDeepFM
+[3] PaddlePaddle implemantation of xDeepFM
+    https://github.com/PaddlePaddle/models/tree/develop/PaddleRec/ctr/xdeepfm
+[4] PyTorch implementation of xDeepFM
+    https://github.com/qian135/ctr_model_zoo/blob/master/xdeepfm.py
 """
 
 import torch
 import torch.nn as nn
-
-from .basemodel import BaseModel
-from ..inputs import combined_dnn_input
-from ..layers import DNN, CIN
+import torch.nn.functional as F
 
 
-class xDeepFM(BaseModel):
-    """Instantiates the xDeepFM architecture.
+class xDeepFM(nn.Module):
+    def __init__(self, feature_size, field_size,
+                 dropout_deep=[0, 0, 0, 0, 0],
+                 deep_layer_sizes=[400, 400, 400, 400],
+                 cin_layer_sizes=[100, 100, 50],
+                 split_half=True,
+                 embedding_size=5):
+        super(xDeepFM, self).__init__()
+        self.feature_size = feature_size
+        self.field_size = field_size
+        self.cin_layer_sizes = cin_layer_sizes
+        self.deep_layer_sizes = deep_layer_sizes
+        self.embedding_size = embedding_size
+        self.dropout_deep = dropout_deep
+        self.split_half = split_half
 
-    :param linear_feature_columns: An iterable containing all the features used by linear part of the model.
-    :param dnn_feature_columns: An iterable containing all the features used by deep part of the model.
-    :param dnn_hidden_units: list,list of positive integer or empty list, the layer number and units in each layer of deep net
-    :param cin_layer_size: list,list of positive integer or empty list, the feature maps  in each hidden layer of Compressed Interaction Network
-    :param cin_split_half: bool.if set to True, half of the feature maps in each hidden will connect to output unit
-    :param cin_activation: activation function used on feature maps
-    :param l2_reg_linear: float. L2 regularizer strength applied to linear part
-    :param l2_reg_embedding: L2 regularizer strength applied to embedding vector
-    :param l2_reg_dnn: L2 regularizer strength applied to deep net
-    :param l2_reg_cin: L2 regularizer strength applied to CIN.
-    :param init_std: float,to use as the initialize std of embedding vector
-    :param seed: integer ,to use as random seed.
-    :param dnn_dropout: float in [0,1), the probability we will drop out a given DNN coordinate.
-    :param dnn_activation: Activation function to use in DNN
-    :param dnn_use_bn: bool. Whether use BatchNormalization before activation or not in DNN
-    :param task: str, ``"binary"`` for  binary logloss or  ``"regression"`` for regression loss
-    :param device: str, ``"cpu"`` or ``"cuda:0"``
-    :return: A PyTorch model instance.
-    
-    """
+        self.input_dim = field_size * embedding_size
 
-    def __init__(self, linear_feature_columns, dnn_feature_columns, dnn_hidden_units=(256, 256),
-                 cin_layer_size=(256, 128,), cin_split_half=True, cin_activation='relu', l2_reg_linear=0.00001,
-                 l2_reg_embedding=0.00001, l2_reg_dnn=0, l2_reg_cin=0, init_std=0.0001, seed=1024, dnn_dropout=0,
-                 dnn_activation='relu', dnn_use_bn=False, task='binary', device='cpu'):
+        # init feature embedding
+        feat_embedding = nn.Embedding(feature_size, embedding_size)
+        nn.init.xavier_uniform_(feat_embedding.weight)
+        self.feat_embedding = feat_embedding
 
-        super(xDeepFM, self).__init__(linear_feature_columns, dnn_feature_columns,
-                                      dnn_hidden_units=dnn_hidden_units,
-                                      l2_reg_linear=l2_reg_linear,
-                                      l2_reg_embedding=l2_reg_embedding, l2_reg_dnn=l2_reg_dnn, init_std=init_std,
-                                      seed=seed,
-                                      dnn_dropout=dnn_dropout, dnn_activation=dnn_activation,
-                                      task=task, device=device)
-        self.dnn_hidden_units = dnn_hidden_units
-        self.use_dnn = len(dnn_feature_columns) > 0 and len(dnn_hidden_units) > 0
-        if self.use_dnn:
-            self.dnn = DNN(self.compute_input_dim(dnn_feature_columns), dnn_hidden_units,
-                           activation=dnn_activation, l2_reg=l2_reg_dnn, dropout_rate=dnn_dropout, use_bn=dnn_use_bn,
-                           init_std=init_std, device=device)
-            self.dnn_linear = nn.Linear(dnn_hidden_units[-1], 1, bias=False).to(device)
-            self.add_regularization_loss(
-                filter(lambda x: 'weight' in x[0] and 'bn' not in x[0], self.dnn.named_parameters()), l2_reg_dnn)
+        # Compress Interaction Network (CIN) Part
+        cin_layer_dims = [self.field_size] + cin_layer_sizes
 
-            self.add_regularization_loss(self.dnn_linear.weight, l2_reg_dnn)
-
-        self.cin_layer_size = cin_layer_size
-        self.use_cin = len(self.cin_layer_size) > 0 and len(dnn_feature_columns) > 0
-        if self.use_cin:
-            field_num = len(self.embedding_dict)
-            if cin_split_half == True:
-                self.featuremap_num = sum(
-                    cin_layer_size[:-1]) // 2 + cin_layer_size[-1]
+        prev_dim, fc_input_dim = self.field_size, 0
+        self.conv1ds = nn.ModuleList()
+        for k in range(1, len(cin_layer_dims)):
+            conv1d = nn.Conv1d(cin_layer_dims[0] * prev_dim, cin_layer_dims[k], 1)
+            nn.init.xavier_uniform_(conv1d.weight)
+            self.conv1ds.append(conv1d)
+            if self.split_half and k != len(self.cin_layer_sizes):
+                prev_dim = cin_layer_dims[k] // 2
             else:
-                self.featuremap_num = sum(cin_layer_size)
-            self.cin = CIN(field_num, cin_layer_size,
-                           cin_activation, cin_split_half, l2_reg_cin, seed, device=device)
-            self.cin_linear = nn.Linear(self.featuremap_num, 1, bias=False).to(device)
-            self.add_regularization_loss(
-                filter(lambda x: 'weight' in x[0], self.cin.named_parameters()), l2_reg_cin)
+                prev_dim = cin_layer_dims[k]
+            fc_input_dim += prev_dim
 
-        self.to(device)
+        # Deep Neural Network Part
+        all_dims = [self.input_dim] + deep_layer_sizes
+        for i in range(len(deep_layer_sizes)):
+            setattr(self, 'linear_' + str(i + 1), nn.Linear(all_dims[i], all_dims[i + 1]))
+            setattr(self, 'batchNorm_' + str(i + 1), nn.BatchNorm1d(all_dims[i + 1]))
+            setattr(self, 'dropout_' + str(i + 1), nn.Dropout(dropout_deep[i + 1]))
 
-    def forward(self, X):
+        # Linear Part
+        self.linear = nn.Linear(self.input_dim, 1)
 
-        sparse_embedding_list, dense_value_list = self.input_from_feature_columns(X, self.dnn_feature_columns,
-                                                                                  self.embedding_dict)
+        # output Part
+        self.output_layer = nn.Linear(1 + fc_input_dim + deep_layer_sizes[-1], 1)
 
-        linear_logit = self.linear_model(X)
-        if self.use_cin:
-            cin_input = torch.cat(sparse_embedding_list, dim=1)
-            cin_output = self.cin(cin_input)
-            cin_logit = self.cin_linear(cin_output)
-        if self.use_dnn:
-            dnn_input = combined_dnn_input(sparse_embedding_list, dense_value_list)
-            dnn_output = self.dnn(dnn_input)
-            dnn_logit = self.dnn_linear(dnn_output)
+    def forward(self, feat_index, feat_value, use_dropout=True):
+        # get feat embedding
+        fea_embedding = self.feat_embedding(feat_index)  # None * F * K
+        x0 = fea_embedding
 
-        if len(self.dnn_hidden_units) == 0 and len(self.cin_layer_size) == 0:  # only linear
-            final_logit = linear_logit
-        elif len(self.dnn_hidden_units) == 0 and len(self.cin_layer_size) > 0:  # linear + CIN
-            final_logit = linear_logit + cin_logit
-        elif len(self.dnn_hidden_units) > 0 and len(self.cin_layer_size) == 0:  # linear +　Deep
-            final_logit = linear_logit + dnn_logit
-        elif len(self.dnn_hidden_units) > 0 and len(self.cin_layer_size) > 0:  # linear + CIN + Deep
-            final_logit = linear_logit + dnn_logit + cin_logit
-        else:
-            raise NotImplementedError
+        # Linear Part
+        linear_part = self.linear(fea_embedding.reshape(-1, self.input_dim))
 
-        y_pred = self.out(final_logit)
+        # CIN Part
+        x_list = [x0]
+        res = []
+        for k in range(1, len(self.cin_layer_sizes) + 1):
+            # Batch * H_K * D, Batch * M * D -->  Batch * H_k * M * D
+            z_k = torch.einsum('bhd,bmd->bhmd', x_list[-1], x_list[0])
+            z_k = z_k.reshape(x0.shape[0], x_list[-1].shape[1] * x0.shape[1], x0.shape[2])
+            x_k = self.conv1ds[k - 1](z_k)
+            x_k = torch.relu(x_k)
 
-        return y_pred
+            if self.split_half and k != len(self.cin_layer_sizes):
+                # x, h = torch.split(x, x.shape[1] // 2, dim=1)
+                next_hidden, hi = torch.split(x_k, x_k.shape[1] // 2, 1)
+            else:
+                next_hidden, hi = x_k, x_k
+
+            x_list.append(next_hidden)
+            res.append(hi)
+
+        res = torch.cat(res, dim=1)
+        res = torch.sum(res, dim=2)
+
+        # Deep NN Part
+        y_deep = fea_embedding.reshape(-1, self.field_size * self.embedding_size)  # None * (F * K)
+        if use_dropout:
+            y_deep = nn.Dropout(self.dropout_deep[0])(y_deep)
+
+        for i in range(1, len(self.deep_layer_sizes) + 1):
+            y_deep = getattr(self, 'linear_' + str(i))(y_deep)
+            y_deep = getattr(self, 'batchNorm_' + str(i))(y_deep)
+            y_deep = F.relu(y_deep)
+            if use_dropout:
+                y_deep = getattr(self, 'dropout_' + str(i))(y_deep)
+
+        # Output Part
+        concat_input = torch.cat((linear_part, res, y_deep), dim=1)
+        y = self.output_layer(concat_input)
+        y = nn.Sigmoid()(y)
+        return y
